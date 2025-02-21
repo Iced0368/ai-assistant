@@ -16,6 +16,14 @@ const defaultConfig = {
     prompt: "",
 }
 
+export type ChatSessionIDBData = {
+    id: string;
+    name: string;
+    messages: SessionMessage[];
+    messageID: number;
+    config: ChatConfig;
+};
+
 export class ChatSession {
     id: string;
     name: string;
@@ -35,36 +43,60 @@ export class ChatSession {
         this.lock = new AsyncLock();
     }
 
-    async chat(text: string, onStream?: (chatResponse: ChatResponse) => void) {
-        let index = 0;
-        this.lock.acquire("chat-lock", async () => {
-            this.messages.push({ 
+    chat(text: string, onStream?: (chatResponse: ChatResponse) => void) {
+        return this.lock.acquire("chat-lock", async () => {
+            const userMessage = { 
                 role: "user", 
                 content: text, 
                 id: ++this.messageID,
+            };
+
+            this.messages.push(userMessage);
+
+            const assistantMessage = {
+                role: "assistant",
+                content: "",
+                id: ++this.messageID,
+            }
+
+            const index = this.messages.push(assistantMessage) - 1;
+
+            const response = await ollama.chat({
+                model: this.config.model,
+                messages: [
+                    { role: "system", content: this.config.prompt },
+                    ...this.messages.slice(Math.max(0, this.messages.length - this.config.memory)),
+                ],
+                stream: true,
             });
 
-            index = this.messages.push(
-                {
-                    role: "assistant",
-                    content: "",
-                    id: ++this.messageID,
-                }
-            ) - 1;
-        });
+            for await (const chunk of response as AsyncIterable<ChatResponse>) {
+                this.messages[index].content += chunk.message.content;
+                onStream && onStream(chunk);
+            }
 
-        const response = await ollama.chat({
-            model: this.config.model,
-            messages: [
-                { role: "system", content: this.config.prompt },
-                ...this.messages.slice(Math.max(0, this.messages.length - this.config.memory)),
-            ],
-            stream: true,
+            return {userMessage, assistantMessage};
         });
-
-        for await (const chunk of response as AsyncIterable<ChatResponse>) {
-            this.messages[index].content += chunk.message.content;
-            onStream && onStream(chunk);
-        }
     }
+}
+
+export const convertSessionToIDBData = (session: ChatSession) => {
+    return {
+        id: session.id,
+        name: session.name,
+        messages: session.messages,
+        config: session.config,
+        messageID: session.messageID,
+    }
+}
+
+export const converIDBDataToSession = (data: ChatSessionIDBData) => {
+    const session = new ChatSession(data.name);
+    session.id = data.id;
+    session.name = data.name;
+    session.messages = data.messages;
+    session.messageID = data.messageID;
+    session.config = data.config;
+
+    return session;
 }

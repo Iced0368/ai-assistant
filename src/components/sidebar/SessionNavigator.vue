@@ -1,11 +1,11 @@
 <script setup lang="ts">
 
-import { ChatSession } from '../../models';
+import { useDataStore } from '../stores/useDataStore';
+import { storeToRefs } from 'pinia';
 
-defineProps<{
-    sessions: ChatSession[],
-    selectedSession: ChatSession,
-}>();
+const dataStore = useDataStore();
+const { sessions, selectedSession } = storeToRefs(dataStore);
+
 const emit = defineEmits();
 
 </script>

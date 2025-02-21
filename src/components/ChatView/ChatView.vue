@@ -4,6 +4,7 @@ import { ref } from 'vue';
 
 import type { ChatSession } from '../../models';
 import ChatMessage from './ChatMessage.vue';
+import { useDataStore } from '../stores/useDataStore';
 
 const props = defineProps<{
   session: ChatSession,
@@ -14,6 +15,8 @@ const containerRef = ref<HTMLElement | null>(null);
 
 const autoScroll = ref(false);
 
+const dataStore = useDataStore();
+
 const scrollToBottom = () => {
   containerRef.value?.scrollTo({ top: containerRef.value.scrollHeight, behavior: "smooth" });
 };
@@ -21,7 +24,7 @@ const scrollToBottom = () => {
 const handleInput = (input: string) => {
   if (input) {
     autoScroll.value = true;
-    props.session.chat(input, () => { autoScroll.value && scrollToBottom()})
+    dataStore.chatToSession(props.session, input, () => { autoScroll.value && scrollToBottom()})
       .then(() => autoScroll.value = false);
     inputValue.value = "";
   }

@@ -1,3 +1,3 @@
-import { ChatSession, type ChatConfig } from "./ChatSession";
+import { ChatSession, type ChatConfig, type ChatSessionIDBData } from "./ChatSession";
 
-export { ChatSession, type ChatConfig };
+export { ChatSession, type ChatConfig, type ChatSessionIDBData };

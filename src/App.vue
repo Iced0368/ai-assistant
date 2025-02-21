@@ -1,25 +1,12 @@
 <script setup lang="ts">
 
-import { ref } from 'vue';
-import { ChatSession } from './models';
-import { ChatView, SessionNavigator } from './components';
-import ToolBar from './components/sidebar/ToolBar.vue';
+import { onMounted } from 'vue';
+import { ChatView, SessionNavigator, ToolBar } from './components';
+import { useDataStore } from './components/stores/useDataStore';
 
-const nullSession = new ChatSession("새 대화");
+const dataStore = useDataStore();
 
-const sessions = ref<ChatSession[]>([nullSession]);
-const selectedSession = ref<ChatSession>(nullSession);
-
-const createSession = () => {
-  const newSession = new ChatSession("새 대화");
-  sessions.value.push(newSession);
-  selectedSession.value = newSession;
-}
-
-const selectSession = (sessionId: string) => {
-  console.log(sessionId)
-  selectedSession.value = sessions.value.find(session => session.id === sessionId)!;
-}
+onMounted(dataStore.loadSessions);
 
 </script>
 
@@ -31,20 +18,20 @@ const selectSession = (sessionId: string) => {
 
     <aside id="aside-left">
       <ToolBar
-        @createSession="createSession"
+        @createSession="dataStore.createSession"
       >
       </ToolBar>
       <SessionNavigator 
-        :sessions="sessions"
-        :selectedSession="selectedSession"
-        @selectSession="selectSession"
+        :sessions="dataStore.sessions"
+        :selectedSession="dataStore.selectedSession"
+        @selectSession="dataStore.selectSession"
       >
       </SessionNavigator>
     </aside>
 
     <main>
       <ChatView 
-        :session="selectedSession"
+        :session="dataStore.selectedSession!"
       >
       </ChatView>
     </main>
